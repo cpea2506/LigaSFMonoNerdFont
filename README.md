@@ -1,4 +1,4 @@
-# SFMono-Nerd-Font-Ligaturized
+# LigaSFMonoNerdFont
 This repository contains pre-patched opentype versions of macOS's SFMono fonts with support for Ligatures and Nerd Fonts. 
 
 ## Showcase
