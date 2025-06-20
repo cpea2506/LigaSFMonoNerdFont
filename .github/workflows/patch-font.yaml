@@ -1,0 +1,41 @@
+name: Patch Font
+
+on:
+  workflow_dispatch:
+
+jobs:
+  patch-font:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install FontForge
+        run: |
+          brew update
+          brew install fontforge
+
+      - name: Download and Extract FontPatcher
+        run: |
+          curl -Lo FontPatcher.zip https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FontPatcher.zip
+          unzip FontPatcher.zip -d Fontpatcher
+          chmod +x Fontpatcher/font-patcher
+
+      - name: Run Font Patch Script
+        run: |
+          for file in *.otf; do
+              echo "$file"
+
+              fontforge -script ./FontPatcher/font-patcher -c "$file" -out ./Output
+          done
+
+      - name: Zip Patched Fonts
+        run: |
+          zip -r LigaSFMonoNerdFont.zip ./Output
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LigaSFMonoNerdFont
+          path: LigaSFMonoNerdFont.zip
