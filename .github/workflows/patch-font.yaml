@@ -35,7 +35,7 @@ jobs:
 
       - name: Zip Patched Fonts
         run: |
-          zip -r LigaSFMonoNerdFont.zip ./Output
+          zip -jr LigaSFMonoNerdFont.zip ./Output/*
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
