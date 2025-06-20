@@ -2,6 +2,9 @@ name: Patch Font
 
 on:
   workflow_dispatch:
+  push:
+    tags:
+    - 'v*'
 
 jobs:
   patch-font:
