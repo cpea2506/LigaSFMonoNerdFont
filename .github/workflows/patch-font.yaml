@@ -2,12 +2,48 @@ name: Patch Font
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 1 * *'
   push:
     tags:
     - 'v*'
 
+permissions:
+  contents: write
+  actions: write
+
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      update: ${{ steps.version.outputs.update }}
+
+    steps:
+      # Re-enabling resets GitHub's 60-day inactivity timer for scheduled workflows
+      - name: Keep Workflow Alive
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh workflow enable patch-font.yaml --repo "${{ github.repository }}"
+
+      - name: Check Nerd Fonts Release
+        id: version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag=$(gh release view --repo ryanoasis/nerd-fonts --json tagName -q .tagName)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+          # Scheduled runs only patch when this repo has no release for the latest Nerd Fonts tag yet
+          if [ "${{ github.event_name }}" = schedule ] && gh release view "$tag" --repo "${{ github.repository }}" > /dev/null 2>&1; then
+            echo "update=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "update=true" >> "$GITHUB_OUTPUT"
+          fi
+
   patch-font:
+    needs: check
+    if: needs.check.outputs.update == 'true'
     runs-on: macos-latest
 
     steps:
@@ -21,7 +57,7 @@ jobs:
 
       - name: Download and Extract FontPatcher
         run: |
-          curl -Lo FontPatcher.zip https://github.com/ryanoasis/nerd-fonts/releases/latest/download/FontPatcher.zip
+          curl -Lo FontPatcher.zip https://github.com/ryanoasis/nerd-fonts/releases/download/${{ needs.check.outputs.tag }}/FontPatcher.zip
           unzip FontPatcher.zip -d Fontpatcher
           chmod +x Fontpatcher/font-patcher
 
@@ -46,6 +82,7 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || needs.check.outputs.tag }}
           files: LigaSFMonoNerdFont.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
