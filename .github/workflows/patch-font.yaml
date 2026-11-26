@@ -4,9 +4,6 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 0 1 * *'
-  push:
-    tags:
-    - 'v*'
 
 permissions:
   contents: write
@@ -57,32 +54,23 @@ jobs:
 
       - name: Download and Extract FontPatcher
         run: |
-          curl -Lo FontPatcher.zip https://github.com/ryanoasis/nerd-fonts/releases/download/${{ needs.check.outputs.tag }}/FontPatcher.zip
-          unzip FontPatcher.zip -d Fontpatcher
-          chmod +x Fontpatcher/font-patcher
+          curl -fLo FontPatcher.zip https://github.com/ryanoasis/nerd-fonts/releases/download/${{ needs.check.outputs.tag }}/FontPatcher.zip
+          unzip FontPatcher.zip -d FontPatcher
 
       - name: Run Font Patch Script
         run: |
           for file in *.otf; do
-              echo "$file"
-
-              fontforge -script ./FontPatcher/font-patcher -c "$file" -out ./Output
+            fontforge -script ./FontPatcher/font-patcher -c "$file" -out ./Output
           done
 
       - name: Zip Patched Fonts
         run: |
-          zip -jr LigaSFMonoNerdFont.zip ./Output/*
-
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: LigaSFMonoNerdFont
-          path: LigaSFMonoNerdFont.zip
+          zip -j LigaSFMonoNerdFont.zip ./Output/*
 
       - name: Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_type == 'tag' && github.ref_name || needs.check.outputs.tag }}
+          tag_name: ${{ needs.check.outputs.tag }}
           files: LigaSFMonoNerdFont.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
